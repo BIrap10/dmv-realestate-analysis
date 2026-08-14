@@ -169,6 +169,7 @@ def print_weight_model():
 def main():
     parser = argparse.ArgumentParser(description="DMV Multifamily Investment Analysis")
     parser.add_argument("--no-charts", action="store_true")
+    parser.add_argument("--map",       action="store_true", help="Generate interactive investment heatmap")
     parser.add_argument("--refresh",   action="store_true", help="Force re-fetch from APIs")
     parser.add_argument("--no-live",   action="store_true", help="Skip live API calls")
     args = parser.parse_args()
@@ -216,6 +217,17 @@ def main():
                 print(f"  ✓ {label:<36} → {os.path.basename(path)}")
         except ImportError:
             print("  matplotlib not installed — run: pip install -r requirements.txt")
+
+    if args.map:
+        print(f"\n{'━' * 72}")
+        print("  GENERATING INTERACTIVE HEATMAP")
+        print(f"{'━' * 72}")
+        try:
+            from src.map_builder import build_map
+            map_path = build_map(df, force_geojson=args.refresh)
+            print(f"  Open in browser: file://{map_path}")
+        except Exception as e:
+            print(f"  Map generation failed: {e}")
 
     out_path = "data/processed/submarket_scores.csv"
     export_cols = [
