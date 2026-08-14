@@ -20,6 +20,7 @@ import pandas as pd
 
 from src.dmv_data import get_dataframe
 from src.scorer import compute_scores, assign_signal, WEIGHTS
+from src.long_term_scorer import compute_long_term_scores, assign_lt_signal, LONG_TERM_WEIGHTS
 
 
 AS_OF = "Q1 2026 (live)"
@@ -84,6 +85,44 @@ def print_summary_table(df: pd.DataFrame, live_context: dict = None):
             f"{row['occupancy_rate']:>5.1f}%  "
             f"    {row['cap_rate_market']:.1f}%"
         )
+
+
+def print_long_term_table(df: pd.DataFrame):
+    ranked = df.sort_values("lt_score", ascending=False)
+    print(f"\n{'━' * 72}")
+    print("  LONG-TERM INVESTMENT RANKING  (5–10 year hold)")
+    print(f"{'━' * 72}")
+    print(f"\n{'Rank':<5} {'Submarket':<38} {'LT Score':>8}  {'LT Signal':<22} {'Entry $/unit':>13} {'Stage':>6}")
+    print("─" * 88)
+    for i, (_, row) in enumerate(ranked.iterrows(), 1):
+        sig, _ = assign_lt_signal(row["lt_score"])
+        stage_label = ["", "Early", "Mid", "Late", "Mature"][int(row["gentrification_stage"])]
+        print(
+            f"  {i:<3} "
+            f"{row['submarket_name']:<38} "
+            f"{row['lt_score']:>7.1f}  "
+            f"{sig:<22} "
+            f"${row['price_per_unit']:>10,}  "
+            f"{stage_label:>6}"
+        )
+
+
+def print_long_term_picks(df: pd.DataFrame, n: int = 3):
+    top = df.nlargest(n, "lt_score")
+    print(f"\n{'━' * 72}")
+    print(f"  TOP {n} LONG-TERM OPPORTUNITIES  (5–10 year investment thesis)")
+    print(f"{'━' * 72}")
+    for rank, (_, row) in enumerate(top.iterrows(), 1):
+        sig, _ = assign_lt_signal(row["lt_score"])
+        stage_label = ["", "Early", "Mid", "Late", "Mature"][int(row["gentrification_stage"])]
+        print(f"\n  #{rank} — {row['submarket_name']}  [Gentrification: {stage_label}]")
+        print(f"       LT Score: {row['lt_score']:.1f} / 100   Signal: {sig}")
+        print(f"       Entry:  ${row['price_per_unit']:,}/unit  |  Cap Rate: {row['cap_rate_market']:.1f}%  |  Rent Headroom: {row['rent_headroom']:.2f}x")
+        print(f"       Zoning Trajectory: {row['zoning_trajectory']}/100  |  Infra Pipeline: {row['infrastructure_pipeline']}/100  |  Employer Pipeline: {row['employer_pipeline_score']}/100")
+        print(f"       5-yr Pop Forecast: +{row['pop_growth_5yr_forecast']:.1f}%")
+        print(f"       Major Employers: {', '.join(row['major_employers'][:2])}")
+        if row.get("long_term_note"):
+            print(f"\n       THESIS: {row['long_term_note']}")
 
 
 def print_top_picks(df: pd.DataFrame, n: int = 3):
@@ -186,11 +225,15 @@ def main():
 
     print("\n  Loading submarket data...")
     df = get_dataframe()
-    print("  Running investment scoring model...")
+    print("  Running current-market scoring model...")
     df = compute_scores(df)
+    print("  Running long-term scoring model...")
+    df = compute_long_term_scores(df)
 
     print_summary_table(df, live_context)
+    print_long_term_table(df)
     print_top_picks(df)
+    print_long_term_picks(df)
     print_risk_flags(df)
     print_weight_model()
 

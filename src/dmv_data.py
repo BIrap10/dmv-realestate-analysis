@@ -1,14 +1,22 @@
 """
 DMV Multifamily Residential — Curated Submarket Data
 -----------------------------------------------------
-Sources: Zillow Research, Apartment List, CoStar, BLS, US Census ACS, Walk Score
-Period: H1 2025 (Jan–Jun 2025)
+Sources: Zillow Research, Apartment List, CoStar, BLS, US Census ACS, Walk Score,
+         Montgomery County Master Plans, WMATA Capital Plan, Maryland DOT
 
-Notes:
-  - All rent figures are effective rent (after concessions)
-  - Occupancy = physical occupancy, not economic
-  - Pipeline = units under construction or permitted, 12-month delivery window
-  - Federal workforce risk score reflects DOGE-era headcount uncertainty (0=high risk, 100=low risk)
+Each submarket carries two sets of metrics:
+  CURRENT  — snapshot of today's market (rent, occupancy, job market)
+  FORWARD  — long-term investment drivers (infrastructure pipeline, zoning,
+              gentrification stage, employer expansion plans)
+
+Forward-looking field definitions:
+  gentrification_stage     1=early (most upside), 2=mid, 3=late, 4=mature
+  zoning_trajectory        0–100: how aggressively is the jurisdiction upzoning for density?
+  employer_pipeline_score  0–100: announced / expected employer expansions in next 3–5 yr
+  infrastructure_pipeline  0–100: planned transit / infrastructure investments
+  pop_growth_5yr_forecast  % projected population growth over next 5 years
+  rent_headroom            (median_hh_income × 0.30) / (avg_rent_1br × 12)
+                           > 1.0 = income can still support meaningfully higher rents
 """
 
 import pandas as pd
@@ -56,8 +64,15 @@ SUBMARKETS = {
         "price_per_unit":        298_000,
         "avg_noi_per_unit":      14_300, # annual NOI $ / unit
         # --- Risk ---
-        "crime_index":           36,    # national avg = 100, lower = safer
+        "crime_index":           36,
         "school_rating":         6.7,
+        # --- Forward-looking (long-term investment thesis) ---
+        "gentrification_stage":     4,    # mature — most appreciation already captured
+        "zoning_trajectory":        52,   # RFK Stadium area redevelopment, but mostly built-out
+        "employer_pipeline_score":  60,   # steady federal + Capitol Hill, no major expansions
+        "infrastructure_pipeline":  62,   # RFK/Anacostia waterfront development; no new transit
+        "pop_growth_5yr_forecast":  2.8,
+        "long_term_note": "Excellent stabilized income asset. Most appreciation already captured; RFK Stadium redevelopment is the one wildcard for upside.",
     },
 
     "Tysons / McLean (VA)": {
@@ -96,6 +111,13 @@ SUBMARKETS = {
         "avg_noi_per_unit":      15_840,
         "crime_index":           21,
         "school_rating":         8.7,
+        # --- Forward-looking ---
+        "gentrification_stage":     3,    # late — Silver Line drove transformation, some runway left
+        "zoning_trajectory":        62,   # Tysons master plan still has undeveloped phases
+        "employer_pipeline_score":  74,   # Capital One expanding; Booz Allen, MITRE stable
+        "infrastructure_pipeline":  55,   # Silver Line complete; no major new transit planned
+        "pop_growth_5yr_forecast":  2.8,
+        "long_term_note": "Strong income property but expensive entry limits long-term return. Best suited for an operator already in the market seeking scale.",
     },
 
     "NoMa / H Street (DC)": {
@@ -134,6 +156,13 @@ SUBMARKETS = {
         "avg_noi_per_unit":      13_620,
         "crime_index":           44,
         "school_rating":         6.1,
+        # --- Forward-looking ---
+        "gentrification_stage":     3,    # late — H Street corridor mostly built out
+        "zoning_trajectory":        48,   # limited upzoning room in dense DC
+        "employer_pipeline_score":  58,   # Amazon feeder demand; federal uncertainty a headwind
+        "infrastructure_pipeline":  52,   # no major new transit near this corridor
+        "pop_growth_5yr_forecast":  2.5,
+        "long_term_note": "Good urban asset but federal workforce headwinds and limited density upside constrain long-term appreciation vs. VA suburbs.",
     },
 
     "Arlington / Rosslyn-Ballston (VA)": {
@@ -172,6 +201,13 @@ SUBMARKETS = {
         "avg_noi_per_unit":      15_410,
         "crime_index":           29,
         "school_rating":         8.2,
+        # --- Forward-looking ---
+        "gentrification_stage":     4,    # mature — fully transformed; limited additional upside
+        "zoning_trajectory":        45,   # already dense; Amazon HQ2 area mostly built
+        "employer_pipeline_score":  72,   # Amazon HQ2 Phase 2 still ramping; Accenture, Boeing
+        "infrastructure_pipeline":  55,   # HQ2 infrastructure mostly complete
+        "pop_growth_5yr_forecast":  2.2,
+        "long_term_note": "Amazon HQ2 demand is already priced in. Mature market with strong income but limited appreciation runway.",
     },
 
     "Silver Spring (MD)": {
@@ -210,6 +246,14 @@ SUBMARKETS = {
         "avg_noi_per_unit":      12_648,
         "crime_index":           49,
         "school_rating":         6.8,
+        # --- Forward-looking ---
+        "gentrification_stage":     2,    # mid — meaningful upside remaining
+        "zoning_trajectory":        71,   # Montgomery County investing in Purple Line TOD corridors
+        "employer_pipeline_score":  62,   # Warner Bros. Discovery stable; county govt steady
+        "infrastructure_pipeline":  92,   # PURPLE LINE — opening 2027–28, Silver Spring is the hub
+                                          # connecting Red + Purple Lines; transformational for the area
+        "pop_growth_5yr_forecast":  3.4,  # Purple Line will accelerate in-migration
+        "long_term_note": "The Purple Line is a once-in-a-generation infrastructure event for Silver Spring. When it opens (2027-28), Silver Spring becomes the only DMV submarket connecting two Metro lines. Buy before the market prices it in.",
     },
 
     "Alexandria / Old Town (VA)": {
@@ -247,6 +291,13 @@ SUBMARKETS = {
         "avg_noi_per_unit":      14_016,
         "crime_index":           35,
         "school_rating":         7.5,
+        # --- Forward-looking ---
+        "gentrification_stage":     4,    # mature — established for decades
+        "zoning_trajectory":        52,   # Potomac Yard growing; Old Town NIMBY pressure limits density
+        "employer_pipeline_score":  58,   # USPTO, Inova stable but not growing fast
+        "infrastructure_pipeline":  62,   # Potomac Yard Metro (2023) already priced in
+        "pop_growth_5yr_forecast":  2.0,
+        "long_term_note": "Solid but fully mature. Potomac Yard is the one growth node; Old Town itself has limited density upside due to historic preservation constraints.",
     },
 
     "Bethesda / Chevy Chase (MD)": {
@@ -285,6 +336,13 @@ SUBMARKETS = {
         "avg_noi_per_unit":      16_192,
         "crime_index":           24,
         "school_rating":         8.9,
+        # --- Forward-looking ---
+        "gentrification_stage":     4,    # mature — one of the most established suburbs in the US
+        "zoning_trajectory":        42,   # NIMBY pressure; limited density appetite
+        "employer_pipeline_score":  62,   # NIH steady; Marriott HQ expanding downtown Bethesda
+        "infrastructure_pipeline":  72,   # Purple Line end station at Bethesda; already well-served
+        "pop_growth_5yr_forecast":  1.8,  # stable but slow-growing affluent suburb
+        "long_term_note": "Wealth preservation asset. High income tenants, excellent schools. But entry price ($368K/unit) and mature stage limit long-term appreciation upside.",
     },
 
     "Gaithersburg (MD)": {
@@ -327,6 +385,17 @@ SUBMARKETS = {
         "avg_noi_per_unit":      11_990,
         "crime_index":           47,
         "school_rating":         7.3,
+        # --- Forward-looking ---
+        "gentrification_stage":     1,    # early — most upside remaining in the dataset
+        "zoning_trajectory":        84,   # Shady Grove Sector Plan: Montgomery County actively
+                                          # upzoning for TOD, higher density, mixed-use near Metro
+        "employer_pipeline_score":  79,   # I-270 Life Sciences Corridor accelerating:
+                                          # AstraZeneca expanding campus; biotech pipeline strong;
+                                          # NIST quantum computing initiative attracting spinoffs
+        "infrastructure_pipeline":  74,   # Corridor Cities Transitway BRT planned;
+                                          # I-270 managed lanes Phase 1 underway
+        "pop_growth_5yr_forecast":  3.2,  # biotech worker influx + housing affordability pushout
+        "long_term_note": "Most undervalued long-term play in the DMV. Cheapest entry ($218K/unit), Stage 1 gentrification, aggressive county upzoning, and one of the strongest biotech employment corridors on the East Coast. Requires patient capital — 5-7 year hold.",
     },
 
     "Rockville (MD)": {
@@ -369,6 +438,13 @@ SUBMARKETS = {
         "avg_noi_per_unit":      12_480,
         "crime_index":           39,
         "school_rating":         7.7,
+        # --- Forward-looking ---
+        "gentrification_stage":     2,    # mid — Town Center actively transforming
+        "zoning_trajectory":        76,   # Rockville Pike BRT corridor upzoning; Town Center Phase II
+        "employer_pipeline_score":  68,   # NIH / FDA cluster steady; Novavax biotech pipeline
+        "infrastructure_pipeline":  71,   # Rockville Pike BRT planned; I-270 managed lanes
+        "pop_growth_5yr_forecast":  2.8,
+        "long_term_note": "Underrated value play. Cheaper than Bethesda, better trajectory than Gaithersburg today, with Town Center densification creating a walkable urban core out of a suburban grid.",
     },
 }
 
