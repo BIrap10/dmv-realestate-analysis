@@ -22,7 +22,7 @@ from src.dmv_data import get_dataframe
 from src.scorer import compute_scores, assign_signal, WEIGHTS
 
 
-AS_OF = "H1 2025"
+AS_OF = "Q1 2026 (live)"
 
 
 def print_header(live_context=None):
@@ -33,31 +33,54 @@ def print_header(live_context=None):
 
     if live_context and live_context.get("live"):
         print()
-        print("  LIVE MARKET DATA LOADED:")
-        if live_context.get("zori_rent"):
-            print(f"    Zillow ZORI (DC MSA)  →  ${live_context['zori_rent']:,.0f} avg rent  "
-                  f"| {live_context['zori_growth_yoy']:+.1f}% YoY  "
-                  f"(as of {live_context.get('zori_as_of', 'n/a')})")
-        if live_context.get("bls_unemployment") is not None:
-            print(f"    BLS DC MSA            →  {live_context['bls_unemployment']:.1f}% unemployment  "
-                  f"({live_context.get('bls_unemployment_period', '')})")
+        print("  LIVE MARKET DATA — Q1 2026:")
+        if live_context.get("zori_q1_2026"):
+            yoy  = f"{live_context['zori_q1_yoy']:+.1f}% YoY" if live_context.get("zori_q1_yoy") else ""
+            qoq  = f"  |  {live_context['zori_q_over_q']:+.1f}% QoQ" if live_context.get("zori_q_over_q") else ""
+            print(f"    Zillow ZORI  DC MSA Q1 2026  →  ${live_context['zori_q1_2026']:,.0f} avg rent  |  {yoy}{qoq}")
+        if live_context.get("zori_latest"):
+            print(f"    Zillow ZORI  latest ({live_context.get('zori_as_of','')})  →  ${live_context['zori_latest']:,.0f}")
+        if live_context.get("bls_unemp_q1_2026") is not None:
+            yoy_u = ""
+            if live_context.get("bls_unemp_q1_2025"):
+                diff = live_context["bls_unemp_q1_2026"] - live_context["bls_unemp_q1_2025"]
+                yoy_u = f"  |  {diff:+.1f}pp vs Q1 2025"
+            print(f"    BLS  DC MSA Q1 2026 avg       →  {live_context['bls_unemp_q1_2026']:.1f}% unemployment{yoy_u}")
+        elif live_context.get("bls_unemployment") is not None:
+            print(f"    BLS  DC MSA latest            →  {live_context['bls_unemployment']:.1f}% unemployment  "
+                  f"({live_context.get('bls_unemployment_period','')})")
         if live_context.get("census_median_income"):
-            print(f"    Census ACS            →  ${live_context['census_median_income']:,} median HH income")
+            print(f"    Census ACS                    →  ${live_context['census_median_income']:,} median HH income")
         print(f"    Sources: {', '.join(live_context.get('sources', []))}")
 
 
-def print_summary_table(df: pd.DataFrame):
+def print_summary_table(df: pd.DataFrame, live_context: dict = None):
+    sz = live_context.get("submarket_zori", {}) if live_context else {}
+    has_live = any(v.get("available") for v in sz.values())
+
+    header2 = "ZORI Q1'26" if has_live else "1BR Rent"
     print(f"\n{'Rank':<5} {'Submarket':<38} {'Score':>6}  {'Signal':<12} "
-          f"{'1BR Rent':>9} {'Occ.':>6} {'Cap Rate':>9}")
-    print("─" * 84)
+          f"{header2:>11} {'Occ.':>6} {'Cap Rate':>9}")
+    print("─" * 88)
+
     for i, (_, row) in enumerate(df.sort_values("score", ascending=False).iterrows(), 1):
         signal, _ = assign_signal(row["score"])
+        name = row["submarket_name"]
+        live = sz.get(name, {})
+
+        if has_live and live.get("available") and live.get("zori_q1_2026"):
+            rent_str  = f"${live['zori_q1_2026']:>6,.0f}"
+            yoy       = live.get("zori_yoy_growth")
+            rent_str += f" ({yoy:+.1f}%)" if yoy else ""
+        else:
+            rent_str = f"${row['avg_rent_1br']:>6,} (curated)"
+
         print(
             f"  {i:<3} "
-            f"{row['submarket_name']:<38} "
+            f"{name:<38} "
             f"{row['score']:>5.1f}  "
             f"{signal:<12} "
-            f"${row['avg_rent_1br']:>6,}  "
+            f"{rent_str:<16} "
             f"{row['occupancy_rate']:>5.1f}%  "
             f"    {row['cap_rate_market']:.1f}%"
         )
@@ -165,7 +188,7 @@ def main():
     print("  Running investment scoring model...")
     df = compute_scores(df)
 
-    print_summary_table(df)
+    print_summary_table(df, live_context)
     print_top_picks(df)
     print_risk_flags(df)
     print_weight_model()

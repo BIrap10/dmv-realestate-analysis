@@ -1,0 +1,115 @@
+{
+  "Navy Yard / Capitol Riverfront (DC)": {
+    "available": true,
+    "zori_q1_2026": 2126.0,
+    "zori_q1_2025": 2160.0,
+    "zori_latest": 2169.0,
+    "zori_yoy_growth": -1.57,
+    "zips_used": [
+      "20003",
+      "20024",
+      "20032"
+    ]
+  },
+  "Tysons / McLean (VA)": {
+    "available": true,
+    "zori_q1_2026": 3095.0,
+    "zori_q1_2025": 3040.0,
+    "zori_latest": 3184.0,
+    "zori_yoy_growth": 1.81,
+    "zips_used": [
+      "22102",
+      "22043",
+      "22101",
+      "22182"
+    ]
+  },
+  "NoMa / H Street (DC)": {
+    "available": true,
+    "zori_q1_2026": 2452.0,
+    "zori_q1_2025": 2445.0,
+    "zori_latest": 2467.0,
+    "zori_yoy_growth": 0.29,
+    "zips_used": [
+      "20002",
+      "20001",
+      "20017"
+    ]
+  },
+  "Arlington / Rosslyn-Ballston (VA)": {
+    "available": true,
+    "zori_q1_2026": 2662.0,
+    "zori_q1_2025": 2677.0,
+    "zori_latest": 2704.0,
+    "zori_yoy_growth": -0.56,
+    "zips_used": [
+      "22201",
+      "22202",
+      "22203",
+      "22204"
+    ]
+  },
+  "Silver Spring (MD)": {
+    "available": true,
+    "zori_q1_2026": 1850.0,
+    "zori_q1_2025": 1834.0,
+    "zori_latest": 1843.0,
+    "zori_yoy_growth": 0.87,
+    "zips_used": [
+      "20901",
+      "20902",
+      "20910",
+      "20912"
+    ]
+  },
+  "Alexandria / Old Town (VA)": {
+    "available": true,
+    "zori_q1_2026": 2511.0,
+    "zori_q1_2025": 2490.0,
+    "zori_latest": 2579.0,
+    "zori_yoy_growth": 0.84,
+    "zips_used": [
+      "22301",
+      "22302",
+      "22314"
+    ]
+  },
+  "Bethesda / Chevy Chase (MD)": {
+    "available": true,
+    "zori_q1_2026": 3185.0,
+    "zori_q1_2025": 2946.0,
+    "zori_latest": 3430.0,
+    "zori_yoy_growth": 8.11,
+    "zips_used": [
+      "20814",
+      "20815",
+      "20816",
+      "20817"
+    ]
+  },
+  "Rockville (MD)": {
+    "available": true,
+    "zori_q1_2026": 2654.0,
+    "zori_q1_2025": 2379.0,
+    "zori_latest": 2737.0,
+    "zori_yoy_growth": 11.56,
+    "zips_used": [
+      "20850",
+      "20851",
+      "20852",
+      "20853"
+    ]
+  },
+  "Gaithersburg (MD)": {
+    "available": true,
+    "zori_q1_2026": 2116.0,
+    "zori_q1_2025": 2120.0,
+    "zori_latest": 2198.0,
+    "zori_yoy_growth": -0.19,
+    "zips_used": [
+      "20877",
+      "20878",
+      "20879"
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "source": "Zillow ZORI Metro",
+  "as_of": "2026-06-30",
+  "metro": "Washington, DC",
+  "latest_rent": 2447.911785462131,
+  "rent_growth_yoy": 0.1,
+  "q1_2026_avg": 2405.0,
+  "q4_2025_avg": 2405.0,
+  "q1_2025_avg": 2401.0,
+  "q1_yoy_growth": 0.17,
+  "q_over_q_growth": 0.0,
+  "fetched_at": "2026-08-14T14:21:21.321636"
+}

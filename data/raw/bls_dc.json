@@ -1,8 +1,12 @@
 {
-  "source": "BLS Public API",
-  "fetched_at": "2026-08-14T02:34:42.208912",
+  "source": "BLS",
+  "fetched_at": "2026-08-14T14:20:36.272035",
   "unemployment_rate": 4.1,
   "unemployment_rate_period": "2026-06",
+  "unemployment_rate_q1_2026": 4.3,
+  "unemployment_rate_q1_2025": 3.53,
   "employment_level": 3318328.0,
-  "employment_level_period": "2026-06"
+  "employment_level_period": "2026-06",
+  "employment_level_q1_2026": 3296645.67,
+  "employment_level_q1_2025": 3403729.0
 }
