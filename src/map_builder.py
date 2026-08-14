@@ -70,11 +70,24 @@ SIGNAL_COLORS = {
     "AVOID":      "#c1121f",
 }
 
+LT_SIGNAL_COLORS = {
+    "STRONG LONG-TERM BUY": "#1b4332",
+    "LONG-TERM BUY":        "#40916c",
+    "HOLD / MONITOR":       "#e9c46a",
+    "PASS":                 "#9b2226",
+}
+
 def _signal(score: float) -> str:
     if score >= 72: return "STRONG BUY"
     if score >= 60: return "BUY"
     if score >= 48: return "WATCH"
     return "AVOID"
+
+def _lt_signal(score: float) -> str:
+    if score >= 72: return "STRONG LONG-TERM BUY"
+    if score >= 60: return "LONG-TERM BUY"
+    if score >= 48: return "HOLD / MONITOR"
+    return "PASS"
 
 
 # ---------------------------------------------------------------------------
@@ -175,10 +188,13 @@ def _popup_html(row: Any) -> str:
     score   = row["score"]
     signal  = _signal(score)
     color   = SIGNAL_COLORS[signal]
-    sig_bg  = color + "22"   # translucent
+    sig_bg  = color + "22"
 
-    score_bar_width = int(score)
-    bar_color = color
+    has_lt  = "lt_score" in row.index
+    lt_score  = row["lt_score"] if has_lt else None
+    lt_sig    = _lt_signal(lt_score) if has_lt else None
+    lt_color  = LT_SIGNAL_COLORS.get(lt_sig, "#9a9182") if lt_sig else "#9a9182"
+    lt_sig_bg = lt_color + "22" if lt_color else "#9a918222"
 
     def fmt_row(label, value):
         return f"""
@@ -187,13 +203,47 @@ def _popup_html(row: Any) -> str:
           <td style="color:#e8e0d0;font-size:11px;font-weight:600;padding:2px 0">{value}</td>
         </tr>"""
 
+    lt_block = ""
+    if has_lt and lt_score is not None:
+        lt_block = f"""
+      <div style="border-top:1px solid #2e3147;margin-top:10px;padding-top:10px">
+        <div style="font-size:10px;color:#9a9182;margin-bottom:4px;letter-spacing:0.5px">
+          LONG-TERM (5–10 YR HOLD)
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <div style="font-size:22px;font-weight:800;color:#e8e0d0">{lt_score:.0f}</div>
+          <div>
+            <div style="font-size:10px;color:#9a9182">/ 100</div>
+            <div style="background:{lt_sig_bg};color:{lt_color};border:1px solid {lt_color};
+                        border-radius:4px;padding:1px 7px;font-size:10px;font-weight:700;
+                        display:inline-block;margin-top:2px">{lt_sig}</div>
+          </div>
+        </div>
+        <div style="background:#0f1117;border-radius:4px;height:5px;margin-bottom:8px">
+          <div style="background:{lt_color};width:{int(lt_score)}%;height:5px;border-radius:4px"></div>
+        </div>
+        <table style="border-collapse:collapse;width:100%">
+          {fmt_row("Entry Price / Unit", f"${row['price_per_unit']:,}")}
+          {fmt_row("Cap Rate (entry)", f"{row['cap_rate_market']:.1f}%")}
+          {fmt_row("Gentrif. Stage", ["", "Stage 1 — Early", "Stage 2 — Mid", "Stage 3 — Late", "Stage 4 — Mature"][int(row.get('gentrification_stage', 4))])}
+          {fmt_row("Infra Pipeline", f"{row.get('infrastructure_pipeline', '—')}/100")}
+          {fmt_row("Employer Pipeline", f"{row.get('employer_pipeline_score', '—')}/100")}
+          {fmt_row("Zoning Trajectory", f"{row.get('zoning_trajectory', '—')}/100")}
+          {fmt_row("5yr Pop. Forecast", f"+{row.get('pop_growth_5yr_forecast', 0):.1f}%")}
+        </table>
+      </div>"""
+
     html = f"""
     <div style="background:#1a1d27;border:1px solid #2e3147;border-radius:8px;
-                padding:14px;min-width:270px;font-family:sans-serif;">
+                padding:14px;min-width:290px;font-family:sans-serif;">
       <div style="font-size:13px;font-weight:700;color:#c9a84c;margin-bottom:4px">
         {name}
       </div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+
+      <div style="font-size:10px;color:#9a9182;margin-bottom:6px;letter-spacing:0.5px">
+        CURRENT MARKET — Q1 2026
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
         <div style="font-size:28px;font-weight:800;color:#e8e0d0">{score:.0f}</div>
         <div>
           <div style="font-size:10px;color:#9a9182">/ 100</div>
@@ -202,8 +252,8 @@ def _popup_html(row: Any) -> str:
                       display:inline-block;margin-top:2px">{signal}</div>
         </div>
       </div>
-      <div style="background:#0f1117;border-radius:4px;height:6px;margin-bottom:12px">
-        <div style="background:{bar_color};width:{score_bar_width}%;height:6px;border-radius:4px"></div>
+      <div style="background:#0f1117;border-radius:4px;height:5px;margin-bottom:10px">
+        <div style="background:{color};width:{int(score)}%;height:5px;border-radius:4px"></div>
       </div>
       <table style="border-collapse:collapse;width:100%">
         {fmt_row("1BR Effective Rent", f"${row['avg_rent_1br']:,}")}
@@ -211,12 +261,11 @@ def _popup_html(row: Any) -> str:
         {fmt_row("Occupancy", f"{row['occupancy_rate']:.1f}%")}
         {fmt_row("Absorption", f"{row['absorption_rate']}%")}
         {fmt_row("Cap Rate", f"{row['cap_rate_market']:.1f}%")}
-        {fmt_row("Price / Unit", f"${row['price_per_unit']:,}")}
         {fmt_row("NOI / Unit / yr", f"${row['avg_noi_per_unit']:,}")}
         {fmt_row("Job Growth", f"{row['job_growth_yoy']:+.1f}% YoY")}
         {fmt_row("Federal Risk", f"{row['federal_workforce_risk']}/100")}
-        {fmt_row("Class", row['class'])}
       </table>
+      {lt_block}
       <div style="margin-top:10px;font-size:10px;color:#9a9182">
         {"  ·  ".join(row["major_employers"][:2])}
       </div>
@@ -394,6 +443,67 @@ def build_map(df, force_geojson: bool = False) -> str:
     marker_layer.add_to(m)
 
     # -----------------------------------------------------------------------
+    # Layer 4: Long-Term Investment markers (colored by LT signal)
+    # -----------------------------------------------------------------------
+    has_lt = "lt_score" in df.columns
+
+    if has_lt:
+        lt_marker_layer = folium.FeatureGroup(name="📈 Long-Term BUY signals (5–10yr)", show=False)
+
+        for _, row in df.iterrows():
+            name = row["submarket_name"]
+            if name not in CENTROIDS:
+                continue
+            lat, lng   = CENTROIDS[name]
+            lt_sc      = row["lt_score"]
+            lt_sig     = _lt_signal(lt_sc)
+            lt_col     = LT_SIGNAL_COLORS[lt_sig]
+            radius     = 14 + int(lt_sc / 100 * 22)
+
+            # Glow ring
+            folium.CircleMarker(
+                location=[lat + 0.004, lng + 0.004],  # slight offset so layers don't stack
+                radius=radius + 5,
+                color=lt_col,
+                fill=True,
+                fill_color=lt_col,
+                fill_opacity=0.12,
+                weight=0,
+            ).add_to(lt_marker_layer)
+
+            folium.CircleMarker(
+                location=[lat + 0.004, lng + 0.004],
+                radius=radius,
+                color=lt_col,
+                fill=True,
+                fill_color=lt_col,
+                fill_opacity=0.88,
+                weight=2,
+                tooltip=folium.Tooltip(
+                    f"<b style='color:#c9a84c'>{name}</b><br>"
+                    f"LT Score: <b>{lt_sc:.0f}</b> — <b style='color:{lt_col}'>{lt_sig}</b>",
+                    style="background:#1a1d27;color:#e8e0d0;border:1px solid #2e3147;"
+                          "font-size:12px;padding:6px 10px;border-radius:6px",
+                ),
+            ).add_to(lt_marker_layer)
+
+            folium.Marker(
+                location=[lat + 0.004, lng + 0.004],
+                icon=folium.DivIcon(
+                    html=f"""<div style="font-size:11px;font-weight:800;color:#ffffff;
+                                         text-shadow:0 1px 3px #000;
+                                         text-align:center;line-height:1.1;
+                                         pointer-events:none">
+                               {lt_sc:.0f}
+                             </div>""",
+                    icon_size=(40, 20),
+                    icon_anchor=(20, 10),
+                ),
+            ).add_to(lt_marker_layer)
+
+        lt_marker_layer.add_to(m)
+
+    # -----------------------------------------------------------------------
     # Title card
     # -----------------------------------------------------------------------
     title_html = """
@@ -417,9 +527,9 @@ def build_map(df, force_geojson: bool = False) -> str:
     legend_html = """
     <div style="position:fixed;bottom:30px;right:12px;
                 background:#1a1d27ee;border:1px solid #2e3147;border-radius:8px;
-                padding:12px 16px;z-index:9999;font-family:sans-serif;min-width:160px">
+                padding:12px 16px;z-index:9999;font-family:sans-serif;min-width:190px">
       <div style="color:#c9a84c;font-size:12px;font-weight:700;margin-bottom:8px">
-        INVESTMENT SIGNAL
+        CURRENT-MARKET SIGNAL
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
         <div style="width:12px;height:12px;border-radius:50%;background:#2d6a4f"></div>
@@ -437,9 +547,30 @@ def build_map(df, force_geojson: bool = False) -> str:
         <div style="width:12px;height:12px;border-radius:50%;background:#c1121f"></div>
         <span style="color:#e8e0d0;font-size:11px">AVOID (&lt; 48)</span>
       </div>
+      <div style="color:#c9a84c;font-size:12px;font-weight:700;margin-top:12px;
+                  border-top:1px solid #2e3147;padding-top:10px;margin-bottom:8px">
+        LONG-TERM SIGNAL (5–10yr)
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+        <div style="width:12px;height:12px;border-radius:50%;background:#1b4332"></div>
+        <span style="color:#e8e0d0;font-size:10px">STRONG LT BUY (≥ 72)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+        <div style="width:12px;height:12px;border-radius:50%;background:#40916c"></div>
+        <span style="color:#e8e0d0;font-size:10px">LONG-TERM BUY (60–71)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+        <div style="width:12px;height:12px;border-radius:50%;background:#e9c46a"></div>
+        <span style="color:#e8e0d0;font-size:10px">HOLD / MONITOR (48–59)</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="width:12px;height:12px;border-radius:50%;background:#9b2226"></div>
+        <span style="color:#e8e0d0;font-size:10px">PASS (&lt; 48)</span>
+      </div>
       <div style="color:#9a9182;font-size:9px;margin-top:10px;border-top:1px solid #2e3147;padding-top:6px">
-        Bubble size ∝ composite score<br>
-        Sources: Zillow, BLS, Census ACS
+        Click any marker for full dual scorecard<br>
+        Toggle LT layer top-right<br>
+        Sources: Zillow ZORI, BLS, Census ACS
       </div>
     </div>
     """

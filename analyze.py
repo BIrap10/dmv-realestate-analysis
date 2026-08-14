@@ -248,13 +248,17 @@ def main():
                 chart_rent_vs_occupancy,
                 chart_rent_by_unit_type,
                 chart_noi_vs_price,
+                chart_dual_score,
+                chart_lt_radar,
             )
             for fn, label, kwargs in [
-                (chart_leaderboard,       "Investment Leaderboard",         {"as_of": AS_OF}),
-                (chart_radar,             "Factor Radar (Top 3)",           {}),
+                (chart_leaderboard,       "Current-Market Leaderboard",     {"as_of": AS_OF}),
+                (chart_radar,             "Factor Radar — Top 3 Current",   {}),
                 (chart_rent_vs_occupancy, "Rent Growth vs Occupancy",       {}),
                 (chart_rent_by_unit_type, "Rent by Unit Type (Top 4)",      {}),
                 (chart_noi_vs_price,      "NOI vs Price Per Unit",          {}),
+                (chart_dual_score,        "Dual-Score: Current vs LT",      {}),
+                (chart_lt_radar,          "LT Factor Radar — Top 3 LT Picks", {}),
             ]:
                 path = fn(df, **kwargs)
                 print(f"  ✓ {label:<36} → {os.path.basename(path)}")
