@@ -1,7 +1,7 @@
 # DMV Multifamily Residential Investment Analysis
 ### Class-A/B Apartment Communities  ·  Washington DC / Virginia / Maryland  ·  Q1 2026
 
-> A data-driven scoring framework for evaluating multifamily residential investment opportunities across 9 DMV submarkets. Pulls live rent and employment data directly from public APIs every time it runs. Built to support acquisition targeting and market-entry decisions for apartment operators.
+> A data-driven dual-score framework for evaluating multifamily residential investment opportunities across 9 DMV submarkets. Runs two independent scoring models: one for today's market performance, one for 5–10 year investment thesis. Pulls live rent and employment data directly from public APIs every time it runs. Built to support acquisition targeting and market-entry decisions for apartment operators.
 
 ---
 
@@ -21,7 +21,11 @@ The script fetches real data at run time — no paid subscriptions required:
 
 ---
 
-## Scoring Model
+## Dual Scoring Models
+
+The analysis runs **two independent scoring models** that answer different questions:
+
+### Model 1 — Current Market Score (what's performing best today)
 
 Each submarket is scored **0–100** across 7 weighted factors calibrated for Class-A/B multifamily underwriting:
 
@@ -35,8 +39,6 @@ Each submarket is scored **0–100** across 7 weighted factors calibrated for Cl
 | Transit & Walkability | 10% | Walk score, transit score, Metro proximity |
 | Supply Risk | 7% | Pipeline vs. absorption ratio, concession rate |
 
-**Investment signals:**
-
 | Signal | Score |
 |---|---|
 | **STRONG BUY** | ≥ 72 |
@@ -44,11 +46,34 @@ Each submarket is scored **0–100** across 7 weighted factors calibrated for Cl
 | **WATCH** | 48–59 |
 | **AVOID** | < 48 |
 
+### Model 2 — Long-Term Investment Score (where to BUY for 5–10 year appreciation)
+
+Weights fundamentally different factors — the things that drive *future* value, not current income:
+
+| Factor | Weight | Rationale |
+|---|---|---|
+| Entry Value | 22% | Cheap price/unit = biggest lever for IRR — buy before the market prices in future value |
+| Growth Trajectory | 20% | Employer pipeline + 5yr population forecast |
+| Infrastructure Pipeline | 18% | Transit investments are the single biggest value driver in the DMV |
+| Zoning / Density | 15% | Upzoning = density = appreciation |
+| Gentrification Stage | 13% | Earlier = more remaining upside (Stage 1 scores highest, Stage 4 lowest) |
+| Rent Headroom | 8% | Income still has room to support meaningfully higher rents |
+| Long-Term Stability | 4% | Schools and safety as a 10-year livability anchor |
+
+| Signal | Score |
+|---|---|
+| **STRONG LONG-TERM BUY** | ≥ 72 |
+| **LONG-TERM BUY** | 60–71 |
+| **HOLD / MONITOR** | 48–59 |
+| **PASS** | < 48 |
+
 ---
 
 ## Results — Q1 2026
 
 *Live: Zillow ZORI DC MSA Q1 2026 avg $2,405 · BLS unemployment Q1 2026 avg 4.3% (+0.8pp YoY)*
+
+### Current Market Rankings (best income today)
 
 | Rank | Submarket | Score | Signal | ZORI Q1 2026 | Occupancy | Cap Rate |
 |---|---|---|---|---|---|---|
@@ -64,31 +89,70 @@ Each submarket is scored **0–100** across 7 weighted factors calibrated for Cl
 
 > **Note on ZORI zip figures:** Zillow ZORI includes all rental types (apartments, condos, and single-family). Bethesda and Rockville read higher because their zip codes contain expensive single-family rentals. The composite scores use multifamily-specific curated rent data.
 
+### Long-Term Investment Rankings (5–10 year hold thesis)
+
+The ranking **completely reverses**. The markets that look worst today are the best long-term buys — because the market hasn't yet priced in their future catalysts.
+
+| Rank | Submarket | LT Score | LT Signal | Entry $/unit | Gentrification Stage |
+|---|---|---|---|---|---|
+| 1 | **Gaithersburg (MD)** | **83.4** | **STRONG LONG-TERM BUY** | $218,000 | Early (Stage 1) |
+| 2 | **Silver Spring (MD)** | **65.0** | **LONG-TERM BUY** | $248,000 | Mid (Stage 2) |
+| 3 | **Rockville (MD)** | **64.4** | **LONG-TERM BUY** | $265,000 | Mid (Stage 2) |
+| 4 | NoMa / H Street (DC) | 57.2 | Hold / Monitor | $310,000 | Late (Stage 3) |
+| 5 | Arlington / Rosslyn-Ballston (VA) | 52.1 | Hold / Monitor | $328,000 | Late (Stage 3) |
+| 6 | Navy Yard / Capitol Riverfront (DC) | 48.3 | Hold / Monitor | $298,000 | Mature (Stage 4) |
+| 7 | Alexandria / Old Town (VA) | 43.7 | Pass | $302,000 | Mature (Stage 4) |
+| 8 | Bethesda / Chevy Chase (MD) | 38.2 | Pass | $425,000 | Mature (Stage 4) |
+| 9 | Tysons / McLean (VA) | 40.9 | Pass | $352,000 | Late (Stage 3) |
+
+> The markets that score best in today's model (Tysons, Navy Yard) are expensive, late-stage, and already fully priced. A buyer entering today pays for value the market has already captured. The long-term model rewards buying *before* that pricing happens.
+
 ---
 
 ## Key Findings — Q1 2026
 
-### 1. Tysons / McLean — #1 STRONG BUY
+### Today's Best Operators: Tysons and Navy Yard
 
-The strongest composite score in the corridor. Capital One, Booz Allen Hamilton, and Freddie Mac anchor a deep private-sector employment base that limits federal workforce exposure (risk score 88/100 — lowest in the analysis). Rent growth of **+5.4% YoY** leads the market, occupancy holds at **95.3%**, and absorption runs at 88% of delivered supply. Pipeline is elevated (3,400 units) but absorption track record supports it. DC MSA unemployment rose to 4.3% in Q1 2026 — Tysons's private-sector anchors insulate it from that trend more than any other DMV submarket.
+**Tysons / McLean** is the top current-market performer. Capital One, Booz Allen Hamilton, and Freddie Mac anchor a deep private-sector employment base that limits federal workforce exposure (risk score 88/100 — lowest in the analysis). Rent growth of **+5.4% YoY** leads the market, occupancy holds at **95.3%**, and absorption runs at 88% of delivered supply. DC MSA unemployment rose to 4.3% in Q1 2026 — Tysons's private-sector anchors insulate it from that trend more than any other DMV submarket.
 
 **Rent:** Studio $2,050 · 1BR $2,720 · 2BR $3,640  
 **Returns:** $352K/unit · $15,840 NOI/unit · 4.5% cap rate
 
-### 2. Navy Yard / Capitol Riverfront — Best Urban Entry
-
-Lowest concession rate in the analysis (2.8%) and highest absorption (90%) signal genuine demand pressure with no landlord giveaways needed. The renter profile is ideal for Class-A: 73% renter-occupied, 46% ages 25–44, median income $128K. At $298K/unit it is also the most accessible price-entry of the two STRONG BUY markets, with a 4.8% cap rate providing better going-in yield than Tysons. Federal workforce risk is moderate (72/100) — some DHS/DOT exposure, but Capitol Hill and tech-adjacent demand provides a buffer.
+**Navy Yard / Capitol Riverfront** has the lowest concession rate in the analysis (2.8%) and highest absorption (90%) — genuine demand pressure with no landlord giveaways. The renter profile is ideal for Class-A: 73% renter-occupied, 46% ages 25–44, median income $128K. At $298K/unit it is the most accessible price-entry of the two STRONG BUY markets.
 
 **Rent:** Studio $2,380 · 1BR $2,890 · 2BR $3,850  
 **Returns:** $298K/unit · $14,300 NOI/unit · 4.8% cap rate
 
-### 3. Watch List: Silver Spring & NoMa
+### Watch List: Silver Spring & NoMa
 
-Both show solid rent momentum (4.5% and 4.4% YoY) and top-tier Metro access, but federal workforce risk scores of 58 and 55 respectively create meaningful demand uncertainty given the DC government employment contraction visible in Q1 2026 BLS data. Revisit if the federal headcount picture stabilises in H2 2026.
+Both show solid rent momentum (4.5% and 4.4% YoY) and top-tier Metro access, but federal workforce risk scores of 58 and 55 respectively create meaningful demand uncertainty given DC government employment contraction visible in Q1 2026 BLS data. **Notably, Silver Spring ranks #2 long-term** — the Purple Line opening 2027–28 is a major infrastructure catalyst that the current-market score does not reflect.
 
-### Risk: Gaithersburg & Rockville — Avoid
+---
 
-Gaithersburg carries the worst profile in the dataset: 6.8% concession rate (landlords giving 3+ weeks free), 71% absorption, a 980-unit pipeline, and 46/100 federal risk (NIST is a federal employer). Rockville is marginally better but still flagged on concessions, absorption, and federal risk simultaneously. Neither market justifies Class-A acquisition pricing without a significant discount.
+### The Long-Term Case: Gaithersburg, Silver Spring, Rockville
+
+This is where the analysis diverges sharply from the current market story.
+
+**Gaithersburg (MD) — #1 Long-Term Buy (LT Score 83.4)**
+
+Today's model rates Gaithersburg last — elevated concessions (6.8%), weak absorption (71%), heavy NIST federal exposure. That's the correct read on today's income. But the long-term model tells the opposite story:
+
+- **Cheapest entry in the DMV** at $218K/unit and 5.5% cap rate — you are buying early, not late
+- **Stage 1 gentrification** — the earliest stage in the dataset, meaning the most remaining upside
+- **Shady Grove Sector Plan** — Montgomery County upzoned the area aggressively for TOD (transit-oriented development) around the Shady Grove Metro station
+- **I-270 Life Sciences Corridor** — NIST, AstraZeneca, and a growing biotech cluster are drawing high-income workers who will need housing
+- **Employer pipeline score 79/100** — announced expansions over the next 3–5 years are the highest in MD suburbs
+- Rent headroom: at current income levels, rents can grow materially before hitting affordability limits
+
+The current weak metrics (concessions, absorption) reflect a market that is still being "discovered." That is exactly the entry point the long-term model targets.
+
+**Silver Spring (MD) — #2 Long-Term Buy (LT Score 65.0)**
+
+The **Purple Line light rail**, opening 2027–28, runs directly through Silver Spring and connects it to Bethesda and College Park without requiring a trip through downtown DC. Transit investments of this scale have historically driven 15–25% rent appreciation in the corridors they serve, compressing cap rates as institutional capital reprices the market. Silver Spring's infrastructure pipeline score is 92/100 — highest in the dataset.
+
+**Rockville (MD) — #3 Long-Term Buy (LT Score 64.4)**
+
+Rockville Town Center densification is underway. Mid-rise mixed-use is replacing surface parking, and the city's zoning trajectory is among the most aggressive in Montgomery County. At $265K/unit with a 5.2% cap rate, entry is still well below the DC/VA markets that have already re-rated.
 
 ---
 
@@ -155,29 +219,38 @@ export CENSUS_API_KEY=your_free_key  # register at api.census.gov/key_signup.htm
 
 ```
 dmv-realestate-analysis/
-├── analyze.py              # Main entry point
+├── analyze.py                  # Main entry point — runs both scoring models
 ├── requirements.txt
 ├── src/
-│   ├── data_fetcher.py     # Live APIs: Zillow ZORI, BLS, Census ACS
-│   ├── dmv_data.py         # Curated submarket data (9 submarkets)
-│   ├── scorer.py           # Weighted investment scoring engine
-│   ├── charts.py           # 5 publication-quality chart generators
-│   └── map_builder.py      # Interactive Folium heatmap
+│   ├── data_fetcher.py         # Live APIs: Zillow ZORI, BLS, Census ACS
+│   ├── dmv_data.py             # Curated submarket data (9 submarkets, 35+ fields each)
+│   ├── scorer.py               # Current-market scoring engine
+│   ├── long_term_scorer.py     # Long-term (5–10yr) scoring engine
+│   ├── charts.py               # 5 publication-quality chart generators
+│   └── map_builder.py          # Interactive Folium heatmap
 ├── data/
-│   ├── raw/                # API response cache (auto-populated)
-│   └── processed/          # submarket_scores.csv
-└── visualizations/         # Charts + interactive map HTML
+│   ├── raw/                    # API response cache (auto-populated)
+│   └── processed/              # submarket_scores.csv
+└── visualizations/             # Charts + interactive map HTML
 ```
 
 ---
 
 ## Adapting the Model
 
-- **Adjust weights** in `src/scorer.py → WEIGHTS` (must sum to 1.0)
-- **Add submarkets** in `src/dmv_data.py` — each is a keyed dict with ~25 metrics
-- **Add zip codes** to a new submarket in `src/data_fetcher.py → SUBMARKET_ZIPS` for live ZORI
-- **Extend to other metros** — swap BLS series IDs and ZORI region name in `src/data_fetcher.py`
-- **Tighten buy thresholds** — adjust `assign_signal()` in `src/scorer.py`
+**Current-market model:**
+- Adjust weights in `src/scorer.py → WEIGHTS` (must sum to 1.0)
+- Tighten buy thresholds in `assign_signal()` in `src/scorer.py`
+
+**Long-term model:**
+- Adjust weights in `src/long_term_scorer.py → LONG_TERM_WEIGHTS` (must sum to 1.0)
+- Update forward-looking fields in `src/dmv_data.py` as new pipeline/zoning data becomes available
+- Adjust buy thresholds in `assign_lt_signal()` in `src/long_term_scorer.py`
+
+**Adding markets:**
+- Add a submarket dict to `src/dmv_data.py` with all required fields (including the forward-looking fields for the LT model)
+- Add zip codes to `src/data_fetcher.py → SUBMARKET_ZIPS` for live ZORI
+- Extend to other metros by swapping BLS series IDs and ZORI region name in `src/data_fetcher.py`
 
 ---
 
