@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
 """
-DMV Multifamily Investment Analysis
--------------------------------------
-Run this script to generate scores, signals, and charts for all DMV submarkets.
+DMV Multifamily Residential Investment Analysis
+------------------------------------------------
+Scores 8 DMV submarkets for Class-A/B apartment investment viability.
+Pulls live market data from Zillow Research, BLS, and Census ACS.
 
 Usage:
-    python analyze.py              # Full analysis + charts
-    python analyze.py --no-charts  # Scores only (faster)
+    python analyze.py              # Full analysis with live data + charts
+    python analyze.py --no-charts  # Scores only
+    python analyze.py --refresh    # Force re-fetch from APIs (bypass cache)
+    python analyze.py --no-live    # Use curated data only, skip API calls
 """
 
 import argparse
 import sys
-import textwrap
+from datetime import datetime
 
 import pandas as pd
 
@@ -19,74 +22,121 @@ from src.dmv_data import get_dataframe
 from src.scorer import compute_scores, assign_signal, WEIGHTS
 
 
-def print_header():
-    print("\n" + "═" * 70)
-    print("  DMV MULTIFAMILY INVESTMENT ANALYSIS  ·  Q4 2024")
-    print("  Class-A Rental Housing  ·  Washington DC / Virginia / Maryland")
-    print("═" * 70)
+AS_OF = "H1 2025"
+
+
+def print_header(live_context=None):
+    print("\n" + "═" * 72)
+    print("  DMV MULTIFAMILY RESIDENTIAL INVESTMENT ANALYSIS")
+    print(f"  Class-A/B Apartments  ·  Washington DC / Virginia / Maryland  ·  {AS_OF}")
+    print("═" * 72)
+
+    if live_context and live_context.get("live"):
+        print()
+        print("  LIVE MARKET DATA LOADED:")
+        if live_context.get("zori_rent"):
+            print(f"    Zillow ZORI (DC MSA)  →  ${live_context['zori_rent']:,.0f} avg rent  "
+                  f"| {live_context['zori_growth_yoy']:+.1f}% YoY  "
+                  f"(as of {live_context.get('zori_as_of', 'n/a')})")
+        if live_context.get("bls_unemployment") is not None:
+            print(f"    BLS DC MSA            →  {live_context['bls_unemployment']:.1f}% unemployment  "
+                  f"({live_context.get('bls_unemployment_period', '')})")
+        if live_context.get("census_median_income"):
+            print(f"    Census ACS            →  ${live_context['census_median_income']:,} median HH income")
+        print(f"    Sources: {', '.join(live_context.get('sources', []))}")
 
 
 def print_summary_table(df: pd.DataFrame):
-    ranked = df.sort_values("score", ascending=False)
-
-    print(f"\n{'Rank':<5} {'Submarket':<38} {'Score':>6}  {'Signal':<12} {'Rent Gr.':>9} {'Occ.':>6}")
-    print("─" * 80)
-
-    for i, (_, row) in enumerate(ranked.iterrows(), 1):
+    print(f"\n{'Rank':<5} {'Submarket':<38} {'Score':>6}  {'Signal':<12} "
+          f"{'1BR Rent':>9} {'Occ.':>6} {'Cap Rate':>9}")
+    print("─" * 84)
+    for i, (_, row) in enumerate(df.sort_values("score", ascending=False).iterrows(), 1):
         signal, _ = assign_signal(row["score"])
         print(
             f"  {i:<3} "
             f"{row['submarket_name']:<38} "
             f"{row['score']:>5.1f}  "
             f"{signal:<12} "
-            f"{row['rent_growth_yoy']:>7.1f}%  "
-            f"{row['occupancy_rate']:>5.1f}%"
+            f"${row['avg_rent_1br']:>6,}  "
+            f"{row['occupancy_rate']:>5.1f}%  "
+            f"    {row['cap_rate_market']:.1f}%"
         )
 
 
 def print_top_picks(df: pd.DataFrame, n: int = 3):
     top = df.nlargest(n, "score")
-    print(f"\n{'━' * 70}")
-    print(f"  TOP {n} INVESTMENT OPPORTUNITIES")
-    print(f"{'━' * 70}")
+    print(f"\n{'━' * 72}")
+    print(f"  TOP {n} INVESTMENT OPPORTUNITIES — DMV MULTIFAMILY")
+    print(f"{'━' * 72}")
 
     for rank, (_, row) in enumerate(top.iterrows(), 1):
         signal, _ = assign_signal(row["score"])
-        print(f"\n  #{rank} — {row['submarket_name']}")
-        print(f"       Score: {row['score']:.1f} / 100  │  Signal: {signal}")
-        print(f"       Rent (1BR): ${row['median_rent_1br']:,}  │  "
-              f"YoY Growth: {row['rent_growth_yoy']:.1f}%  │  "
-              f"Occupancy: {row['occupancy_rate']:.1f}%")
-        print(f"       Job Growth: {row['job_growth_yoy']:.1f}%  │  "
-              f"Unemployment: {row['unemployment_rate']:.1f}%  │  "
-              f"Cap Rate: {row['cap_rate_market']:.1f}%")
+        print(f"\n  #{rank} — {row['submarket_name']}  [{row['class']}]")
+        print(f"       Score: {row['score']:.1f} / 100   Signal: {signal}")
+        print(f"       Effective Rent   Studio: ${row['avg_rent_studio']:,}  "
+              f"| 1BR: ${row['avg_rent_1br']:,}  "
+              f"| 2BR: ${row['avg_rent_2br']:,}")
+        print(f"       Rent Growth: {row['rent_growth_yoy']:+.1f}% YoY  "
+              f"| Occ.: {row['occupancy_rate']:.1f}%  "
+              f"| Absorption: {row['absorption_rate']}%  "
+              f"| Concessions: {row['concession_rate']:.1f}%")
+        print(f"       Cap Rate: {row['cap_rate_market']:.1f}%  "
+              f"| Price/Unit: ${row['price_per_unit']:,}  "
+              f"| NOI/Unit: ${row['avg_noi_per_unit']:,}/yr")
+        print(f"       Jobs: +{row['job_growth_yoy']:.1f}% YoY  "
+              f"| Unemployment: {row['unemployment_rate']:.1f}%  "
+              f"| Federal Risk Score: {row['federal_workforce_risk']}/100")
         print(f"       Major Employers: {', '.join(row['major_employers'][:2])}")
 
         bullets = []
-        if row["score_rent_growth"] >= 75:
-            bullets.append("Strong rent momentum signals continued NOI growth")
+        if row["score_rent_growth"] >= 70:
+            bullets.append("Rent momentum among the strongest in the corridor — NOI growth likely")
         if row["score_job_market"] >= 70:
-            bullets.append("Diversified, high-quality employment base reduces demand risk")
+            bullets.append("Private-sector job base limits federal headcount exposure")
         if row["score_demographics"] >= 70:
-            bullets.append("Prime renter cohort (25–44) growing faster than market average")
+            bullets.append("Prime renter cohort (25–44) expanding faster than metro average")
         if row["score_transit"] >= 70:
-            bullets.append("Metro proximity supports premium rents and low vacancy")
-        for b in bullets[:2]:
+            bullets.append("Metro proximity supports premium rent capture and lower concessions")
+        if row["score_supply_risk"] >= 70:
+            bullets.append("Lean supply pipeline relative to absorption reduces lease-up risk")
+        for b in bullets[:3]:
             print(f"       › {b}")
 
 
+def print_risk_flags(df: pd.DataFrame):
+    print(f"\n{'━' * 72}")
+    print("  RISK FLAGS")
+    print(f"{'━' * 72}")
+    risky = df[df["score"] < 48].sort_values("score")
+    if risky.empty:
+        print("  No AVOID-rated submarkets in current dataset.")
+        return
+    for _, row in risky.iterrows():
+        issues = []
+        if row["concession_rate"] > 5.0:
+            issues.append(f"high concessions ({row['concession_rate']:.1f}%)")
+        if row["absorption_rate"] < 78:
+            issues.append(f"weak absorption ({row['absorption_rate']}%)")
+        if row["federal_workforce_risk"] < 55:
+            issues.append(f"elevated federal workforce risk ({row['federal_workforce_risk']}/100)")
+        if row["new_supply_units_pipeline"] > 1200:
+            issues.append(f"heavy pipeline ({row['new_supply_units_pipeline']:,} units)")
+        print(f"  {row['submarket_name']}")
+        print(f"    Score: {row['score']:.1f}  |  Issues: {', '.join(issues) if issues else 'multiple weak factors'}")
+
+
 def print_weight_model():
-    print(f"\n{'━' * 70}")
-    print("  SCORING MODEL WEIGHTS")
-    print(f"{'━' * 70}")
+    print(f"\n{'━' * 72}")
+    print("  SCORING MODEL — WEIGHT BREAKDOWN")
+    print(f"{'━' * 72}")
     label_map = {
-        "rent_growth":    "Rent Growth Momentum   ",
-        "occupancy":      "Occupancy & Absorption ",
-        "job_market":     "Job Market Strength    ",
-        "demographics":   "Population & Renters   ",
-        "income_quality": "Income Quality         ",
-        "transit":        "Transit & Walkability  ",
-        "market_risk":    "Market Risk Mgmt       ",
+        "rent_growth":    "Rent Growth Momentum       ",
+        "occupancy":      "Occupancy & Leasing        ",
+        "job_market":     "Job Market Quality         ",
+        "demographics":   "Renter Demographics        ",
+        "income_quality": "Income Quality             ",
+        "transit":        "Transit & Walkability      ",
+        "supply_risk":    "Supply Risk                ",
     }
     for key, w in WEIGHTS.items():
         bar = "█" * int(w * 100 // 3)
@@ -94,59 +144,71 @@ def print_weight_model():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="DMV Real Estate Investment Analysis")
-    parser.add_argument("--no-charts", action="store_true", help="Skip chart generation")
+    parser = argparse.ArgumentParser(description="DMV Multifamily Investment Analysis")
+    parser.add_argument("--no-charts", action="store_true")
+    parser.add_argument("--refresh",   action="store_true", help="Force re-fetch from APIs")
+    parser.add_argument("--no-live",   action="store_true", help="Skip live API calls")
     args = parser.parse_args()
 
-    print_header()
+    live_context = {}
+    if not args.no_live:
+        try:
+            from src.data_fetcher import fetch_live_context
+            live_context = fetch_live_context(force=args.refresh)
+        except Exception as e:
+            print(f"  [WARN] Live data fetch error: {e}")
+
+    print_header(live_context)
+
     print("\n  Loading submarket data...")
     df = get_dataframe()
-
     print("  Running investment scoring model...")
     df = compute_scores(df)
 
     print_summary_table(df)
     print_top_picks(df)
+    print_risk_flags(df)
     print_weight_model()
 
     if not args.no_charts:
-        print(f"\n{'━' * 70}")
+        print(f"\n{'━' * 72}")
         print("  GENERATING CHARTS")
-        print(f"{'━' * 70}")
+        print(f"{'━' * 72}")
         try:
             from src.charts import (
                 chart_leaderboard,
                 chart_radar,
                 chart_rent_vs_occupancy,
-                chart_score_breakdown,
+                chart_rent_by_unit_type,
+                chart_noi_vs_price,
             )
-            for fn, label in [
-                (chart_leaderboard,        "Leaderboard"),
-                (chart_radar,              "Radar / Factor Breakdown"),
-                (chart_rent_vs_occupancy,  "Rent vs Occupancy Bubble"),
-                (chart_score_breakdown,    "Stacked Score Breakdown"),
+            for fn, label, kwargs in [
+                (chart_leaderboard,       "Investment Leaderboard",         {"as_of": AS_OF}),
+                (chart_radar,             "Factor Radar (Top 3)",           {}),
+                (chart_rent_vs_occupancy, "Rent Growth vs Occupancy",       {}),
+                (chart_rent_by_unit_type, "Rent by Unit Type (Top 4)",      {}),
+                (chart_noi_vs_price,      "NOI vs Price Per Unit",          {}),
             ]:
-                path = fn(df)
-                print(f"  ✓ {label:<32} → {path}")
-            print("\n  All charts saved to /visualizations/")
+                path = fn(df, **kwargs)
+                print(f"  ✓ {label:<36} → {os.path.basename(path)}")
         except ImportError:
-            print("  matplotlib not installed — skipping charts.")
-            print("  Run: pip install -r requirements.txt")
+            print("  matplotlib not installed — run: pip install -r requirements.txt")
 
-    # Export scored data
     out_path = "data/processed/submarket_scores.csv"
-    df[[
-        "submarket_name", "state", "score",
-        "rent_growth_yoy", "rent_growth_3yr", "occupancy_rate",
-        "job_growth_yoy", "unemployment_rate", "cap_rate_market",
-        "price_per_unit", "score_rent_growth", "score_occupancy",
-        "score_job_market", "score_demographics",
-        "score_income_quality", "score_transit", "score_market_risk"
-    ]].sort_values("score", ascending=False).to_csv(out_path, index=False)
+    export_cols = [
+        "submarket_name", "state", "class", "score",
+        "avg_rent_1br", "rent_growth_yoy", "rent_growth_3yr",
+        "occupancy_rate", "absorption_rate", "concession_rate",
+        "job_growth_yoy", "federal_workforce_risk",
+        "cap_rate_market", "price_per_unit", "avg_noi_per_unit",
+        "score_rent_growth", "score_occupancy", "score_job_market",
+        "score_demographics", "score_income_quality", "score_transit", "score_supply_risk",
+    ]
+    df.sort_values("score", ascending=False)[export_cols].to_csv(out_path, index=False)
     print(f"\n  Data exported → {out_path}")
+    print(f"\n{'═' * 72}\n")
 
-    print(f"\n{'═' * 70}\n")
 
-
+import os
 if __name__ == "__main__":
     main()

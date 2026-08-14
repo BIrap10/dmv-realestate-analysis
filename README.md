@@ -1,104 +1,116 @@
-# DMV Multifamily Investment Analysis
-### Class-A Rental Housing · Washington DC / Virginia / Maryland · Q4 2024
+# DMV Multifamily Residential Investment Analysis
+### Class-A/B Apartment Communities  ·  Washington DC / Virginia / Maryland
 
-> A data-driven scoring framework for evaluating Class-A multifamily investment opportunities across the DC–Maryland–Virginia metro area. Built to support acquisition, underwriting, and market-entry decisions.
+> A data-driven scoring framework for evaluating multifamily residential investment opportunities across 8 DMV submarkets. Pulls live rent and employment data from public APIs. Built to support acquisition targeting and market-entry decisions for apartment operators.
 
 ---
 
-## Overview
+## Live Data Sources
 
-This tool scores 8 key DMV submarkets across 7 quantitative factors — from rent growth momentum to job market depth — and outputs a composite investment signal (**STRONG BUY / BUY / WATCH / AVOID**) for each market.
+The script fetches real data at run time — no paid subscriptions required:
 
-It is designed for multifamily operators and investors evaluating where to deploy capital in the DMV corridor.
+| Source | Data | Update Frequency |
+|---|---|---|
+| **Zillow Research ZORI** | DC MSA effective rent index | Monthly |
+| **BLS Public API** | Metro unemployment & employment | Monthly |
+| **Census ACS** | Median household income (optional key) | Annual |
+| Curated submarket data | Occupancy, pipeline, NOI, transit | Manually refreshed |
+
+Submarket-level data (occupancy, pipeline, cap rates) is curated from Zillow, Apartment List, and CoStar and stored in `src/dmv_data.py`.
 
 ---
 
 ## Scoring Model
 
-Scores are calculated on a **0–100 scale** using a weighted model calibrated to Class-A underwriting criteria:
+Each submarket is scored **0–100** using 7 weighted factors calibrated for Class-A/B multifamily residential underwriting:
 
-| Factor | Weight | Data Points |
+| Factor | Weight | Key Inputs |
 |---|---|---|
-| Rent Growth Momentum | 22% | YoY & 3-year rent growth |
-| Occupancy & Absorption | 18% | Occupancy rate, absorbed units % |
-| Job Market Strength | 18% | Job growth rate, unemployment rate |
-| Population & Demographics | 15% | Population growth, net migration, prime renter cohort (25–44) |
-| Income Quality | 12% | Median HH income, income growth |
-| Transit & Walkability | 10% | Transit score, walk score, Metro proximity |
-| Market Risk | 5% | Crime index, supply pipeline risk |
+| Rent Growth Momentum | 22% | YoY effective rent growth, 3-year cumulative |
+| Occupancy & Leasing | 18% | Physical occupancy, absorption rate, days on market |
+| Job Market Quality | 18% | Job growth, unemployment, federal workforce risk |
+| Renter Demographics | 15% | Renter %, prime cohort (25–44), population & migration |
+| Income Quality | 10% | Median HH income, income growth rate |
+| Transit & Walkability | 10% | Walk score, transit score, Metro proximity |
+| Supply Risk | 7% | Pipeline vs. absorption, concession rate |
 
-**Signal thresholds:**
-- `STRONG BUY` — Score ≥ 72
-- `BUY` — Score 60–71
-- `WATCH` — Score 48–59
-- `AVOID` — Score < 48
+**Investment signals:**
+
+| Signal | Score Range |
+|---|---|
+| STRONG BUY | ≥ 72 |
+| BUY | 60–71 |
+| WATCH | 48–59 |
+| AVOID | < 48 |
 
 ---
 
-## Results — Q4 2024
+## Latest Results — H1 2025
 
-| Rank | Submarket | Score | Signal | Rent Growth | Occupancy |
-|---|---|---|---|---|---|
-| 1 | Navy Yard / Capitol Riverfront (DC) | 84.6 | **STRONG BUY** | +5.6% | 95.3% |
-| 2 | Tysons / McLean (VA) | 81.5 | **STRONG BUY** | +5.1% | 95.1% |
-| 3 | NoMa / H Street (DC) | 57.3 | **WATCH** | +4.8% | 94.8% |
-| 4 | Arlington / Rosslyn-Ballston (VA) | 52.7 | **WATCH** | +4.2% | 94.1% |
-| 5 | Silver Spring (MD) | 51.1 | **WATCH** | +4.6% | 94.4% |
-| 6 | Alexandria / Old Town (VA) | 31.8 | **AVOID** | +3.7% | 93.6% |
-| 7 | Bethesda / Chevy Chase (MD) | 31.1 | **AVOID** | +3.9% | 93.2% |
-| 8 | Rockville / Gaithersburg (MD) | 5.0 | **AVOID** | +3.4% | 92.8% |
+*Live at run time: Zillow ZORI DC MSA $2,448 avg rent (+0.1% YoY) · BLS 4.1% unemployment (Jun 2026)*
+
+| Rank | Submarket | Score | Signal | 1BR Rent | Occupancy | Cap Rate |
+|---|---|---|---|---|---|---|
+| 1 | Tysons / McLean (VA) | 84.3 | **STRONG BUY** | $2,720 | 95.3% | 4.5% |
+| 2 | Navy Yard / Capitol Riverfront (DC) | 80.0 | **STRONG BUY** | $2,890 | 95.1% | 4.8% |
+| 3 | Silver Spring (MD) | 55.9 | **WATCH** | $2,220 | 94.2% | 5.1% |
+| 4 | NoMa / H Street (DC) | 55.5 | **WATCH** | $2,680 | 94.6% | 4.9% |
+| 5 | Arlington / Rosslyn-Ballston (VA) | 51.7 | **WATCH** | $2,800 | 93.8% | 4.6% |
+| 6 | Alexandria / Old Town (VA) | 33.6 | **AVOID** | $2,510 | 93.3% | 4.8% |
+| 7 | Bethesda / Chevy Chase (MD) | 29.3 | **AVOID** | $2,750 | 92.9% | 4.4% |
+| 8 | Rockville / Gaithersburg (MD) | 3.4 | **AVOID** | $2,080 | 92.4% | 5.3% |
 
 ---
 
 ## Key Findings
 
-### 1. Navy Yard / Capitol Riverfront — Top Pick
-The strongest overall submarket in the DMV. Rent growth leads the region at **+5.6% YoY**, absorption holds at **91%** of delivered supply, and the demographic profile is ideal: 72% renters, median age 31. The continued buildout of the Capitol Riverfront BID and proximity to Amazon's HQ2 feeder jobs supports a durable demand thesis.
+### 1. Tysons / McLean — #1 Pick
 
-### 2. Tysons / McLean — Best Job Market Anchor
-**+4.1% job growth** — the highest in the DMV — driven by Capital One, Booz Allen Hamilton, and Freddie Mac headquarters clustering within walkable distance of Silver Line stations. Crime index of 22 (national avg: 100) signals a safe, high-income renter base. Supply pipeline risk is elevated (3,200 units) but absorption history supports it.
+Strongest composite score in the DMV. Capital One, Booz Allen Hamilton, and Freddie Mac anchor a deep private-sector employment base that insulates demand from federal workforce cuts (risk score 88/100 — lowest federal exposure in the analysis). Rent growth leads the market at **+5.4% YoY** effective, occupancy holds at **95.3%**, and absorption of new supply runs at 88%. Pipeline is elevated (3,400 units) but track record of absorption supports it.
 
-### 3. NoMa / H Street — Best Value Entry
-Strong fundamentals at a lower price-per-unit ($285K) than Navy Yard or Tysons. Rent growth of **+4.8% YoY** and walkability score of 88 make this the most accessible STRONG BUY-adjacent market. Amazon HQ2 job spillover from Arlington continues to lift demand eastward into NoMa.
+**Rent:** Studio $2,050 · 1BR $2,720 · 2BR $3,640  
+**Returns:** $352K/unit acquisition · $15,840 NOI/unit · 4.5% cap rate
 
-### Caution: Rockville / Gaithersburg
-Weakest absorption (76%) relative to a large pipeline (1,450 units), combined with lower transit scores and slower job growth. Unless underwritten at a significant discount to Bethesda, this submarket carries meaningful lease-up risk.
+### 2. Navy Yard / Capitol Riverfront — Best Urban Bet
 
----
+Lowest concession rate in the analysis (2.8%) signals genuine demand pressure. 90% absorption of delivered supply over the past 12 months is the highest in the corridor. The submarket's renter profile is ideal for Class-A: 73% renter-occupied, 46% ages 25–44, median income $128K. Federal workforce risk is moderate (score 72) given DHS/DOT anchoring, but offset by strong Capitol Hill and tech-sector demand.
 
-## Data Sources
+**Rent:** Studio $2,380 · 1BR $2,890 · 2BR $3,850  
+**Returns:** $298K/unit · $14,300 NOI/unit · 4.8% cap rate — best price-entry in the STRONG BUY tier
 
-| Dataset | Source |
-|---|---|
-| Rent & occupancy rates | Zillow Research (ZORI), CoStar |
-| Employment & unemployment | US Bureau of Labor Statistics (BLS) |
-| Population & demographic growth | US Census Bureau, ACS 5-Year Estimates |
-| Income data | US Census Bureau ACS |
-| Walk / Transit scores | Walk Score API |
-| Crime index | FBI UCR / local PD data |
-| Cap rates, price-per-unit | CoStar, RealPage |
+### 3. Watch List: Silver Spring & NoMa
 
-> All figures reflect Q4 2024 / YE 2024 actuals. Pipeline data reflects projects under construction or permitted as of December 2024.
+Both markets show strong rent growth (4.5% and 4.4% respectively) and high Metro connectivity, but job market scores are held back by higher federal workforce exposure and slower private-sector job growth than the VA suburbs. Worth monitoring for a buy entry if federal employment stabilises.
+
+### Risk: Rockville / Gaithersburg — Avoid
+
+Six factors flagged simultaneously: 6.2% concession rate, 74% absorption (weakest in analysis), 1,560-unit pipeline, elevated federal risk, minimal transit access, and slowest job growth. Bethesda faces similar federal risk without the rental yield to compensate.
 
 ---
 
 ## Usage
 
 ```bash
-# Install dependencies
+# Install dependencies (all free — no paid APIs)
 pip install -r requirements.txt
 
-# Run the full analysis (scores + charts)
+# Full analysis: live data + 5 charts
 python analyze.py
 
-# Scores only (no chart output)
+# Force re-fetch from APIs (bypass 24h cache)
+python analyze.py --refresh
+
+# Scores only, no chart output
 python analyze.py --no-charts
+
+# Curated data only, skip API calls
+python analyze.py --no-live
 ```
 
-**Output:**
-- Terminal: ranked leaderboard, top picks with investment rationale, model weight breakdown
-- `/visualizations/`: 4 publication-quality charts
-- `/data/processed/submarket_scores.csv`: full scored dataset
+**Optional:** Set `CENSUS_API_KEY` for income data from Census ACS:
+```bash
+export CENSUS_API_KEY=your_free_key  # register at api.census.gov/key_signup.html
+```
 
 ---
 
@@ -106,22 +118,40 @@ python analyze.py --no-charts
 
 | File | Description |
 |---|---|
-| `01_leaderboard.png` | Horizontal bar chart — all submarkets ranked by composite score |
-| `02_radar.png` | Spider chart — top 3 submarkets compared across all 7 factors |
-| `03_rent_vs_occupancy.png` | Bubble chart — rent growth vs occupancy, bubble size = score |
-| `04_score_breakdown.png` | Stacked bar — weighted contribution of each factor per submarket |
+| `01_leaderboard.png` | All submarkets ranked by composite score |
+| `02_radar.png` | Factor profile comparison — top 3 submarkets |
+| `03_rent_vs_occupancy.png` | Rent growth vs. physical occupancy bubble chart |
+| `04_rent_by_unit_type.png` | Effective rent by unit mix — top 4 submarkets |
+| `05_noi_vs_price.png` | NOI per unit vs. acquisition price, implied yield |
 
 ---
 
-## Extending the Model
+## Project Structure
 
-The scoring engine (`src/scorer.py`) is fully parameterised. To adjust for a different investment thesis:
-
-- **Change weights** in `WEIGHTS` dict (must sum to 1.0)
-- **Add new markets** via `src/dmv_data.py` — each submarket is a keyed dict
-- **Adjust signal thresholds** in `assign_signal()` to tighten or relax buy criteria
-- **Swap in live data** by replacing `get_dataframe()` with a CoStar or Zillow API call
+```
+dmv-realestate-analysis/
+├── analyze.py              # Main entry point
+├── requirements.txt
+├── src/
+│   ├── data_fetcher.py     # Live API integrations (Zillow, BLS, Census)
+│   ├── dmv_data.py         # Curated submarket data (H1 2025)
+│   ├── scorer.py           # Weighted scoring engine
+│   └── charts.py           # 5 publication-quality chart generators
+├── data/
+│   ├── raw/                # API response cache (auto-populated)
+│   └── processed/          # submarket_scores.csv
+└── visualizations/         # Generated chart PNGs
+```
 
 ---
 
-*Built for real estate investment analysis. Data reflects public sources and market estimates; not investment advice.*
+## Adapting the Model
+
+- **Adjust weights** in `src/scorer.py → WEIGHTS` (must sum to 1.0)
+- **Add submarkets** in `src/dmv_data.py` — each is a keyed dict with ~25 metrics
+- **Extend to other markets** — swap out the BLS/ZORI region codes in `src/data_fetcher.py`
+- **Tighten buy signals** — adjust thresholds in `assign_signal()` in `src/scorer.py`
+
+---
+
+*Data sourced from Zillow Research, BLS, and US Census Bureau. Submarket-level figures from Zillow, Apartment List, CoStar. Not investment advice.*
